@@ -1,0 +1,12 @@
+// /** @file
+//
+// Windows CE Loader
+//
+// **/
+
+
+#string STR_PACKAGE_ABSTRACT            #language en-US "CeLoader"
+
+#string STR_PACKAGE_DESCRIPTION         #language en-US "This Package contains the Windows CE boot loader."
+
+

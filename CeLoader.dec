@@ -1,0 +1,16 @@
+## @file
+#  FAT Package
+#
+#  FAT 32 Driver
+#  Copyright (c) 2007 - 2014, Intel Corporation. All rights reserved.<BR>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = CeLoader
+  PACKAGE_UNI_FILE               = CeLoader.uni
+  PACKAGE_GUID                   = D5DF7A80-0B93-462C-BEBD-0FDBC20423B6
+  PACKAGE_VERSION                = 0.3
