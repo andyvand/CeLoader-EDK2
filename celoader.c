@@ -81,8 +81,12 @@ void SetBootArgs(UINT32 dwDefVideoWidth, UINT32 dwDefVideoHeight,
 //======================================================================
 // Bootloader Entry Point
 //======================================================================
-EFI_STATUS LoaderMain (IN EFI_HANDLE ImageHandle, 
-					   IN EFI_SYSTEM_TABLE *SystemTable)
+EFI_STATUS
+EFIAPI
+LoaderMain (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
+)
 {
     EFI_STATUS              Status;
 
