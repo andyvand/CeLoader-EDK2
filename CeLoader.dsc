@@ -27,8 +27,6 @@
   MSFT:RELEASE_*_*_CC_FLAGS            = /D MDEPKG_NDEBUG
   *_*_*_CC_FLAGS                       = -D DISABLE_NEW_DEPRECATED_INTERFACES
 
-!include MdePkg/MdeLibs.dsc.inc
-
 [LibraryClasses]
   #
   # Entry Point Libraries
@@ -48,7 +46,6 @@
   DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
   DebugPrintErrorLevelLib|MdePkg/Library/BaseDebugPrintErrorLevelLib/BaseDebugPrintErrorLevelLib.inf
   DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
-  BootManagerUiLib|MdeModulePkg/Library/BootManagerUiLib/BootManagerUiLib.inf 
   ReportStatusCodeLib|MdePkg/Library/BaseReportStatusCodeLibNull/BaseReportStatusCodeLibNull.inf
   HiiLib|MdeModulePkg/Library/UefiHiiLib/UefiHiiLib.inf
   UefiBootManagerLib|MdeModulePkg/Library/UefiBootManagerLib/UefiBootManagerLib.inf
@@ -58,8 +55,22 @@
   DxeServicesTableLib|MdePkg/Library/DxeServicesTableLib/DxeServicesTableLib.inf
   DxeServicesLib|MdePkg/Library/DxeServicesLib/DxeServicesLib.inf
   SortLib|MdeModulePkg/Library/UefiSortLib/UefiSortLib.inf
-  VariablePolicyHelperLib|MdeModulePkg/Library/VariablePolicyHelperLib/VariablePolicyHelperLib.inf
   UefiHiiServicesLib|MdeModulePkg/Library/UefiHiiServicesLib/UefiHiiServicesLib.inf
+
+[LibraryClasses.IA32]
+  StackCheckLib|MdePkg/Library/StackCheckLibNull/StackCheckLibNull.inf
+  CompilerIntrinsicsLib|MdePkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
+
+[LibraryClasses.X64]
+  StackCheckLib|MdePkg/Library/StackCheckLibNull/StackCheckLibNull.inf
+  CompilerIntrinsicsLib|MdePkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
+
+[LibraryClasses.AARCH64]
+  StackCheckLib|MdePkg/Library/StackCheckLibNull/StackCheckLibNull.inf
+  CompilerIntrinsicsLib|MdePkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
+
+[LibraryClasses.ARM]
+  CompilerIntrinsicsLib|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
 
 ###################################################################################################
 #
@@ -82,3 +93,8 @@
 
 [Components]
   CeLoader/CeLoader.inf
+
+[BuildOptions]
+  RVCT:*_*_ARM_PLATFORM_FLAGS == --cpu Cortex-A15
+  GCC:*_*_ARM_PLATFORM_FLAGS == -mcpu=cortex-a15
+  *_*_AARCH64_PLATFORM_FLAGS ==

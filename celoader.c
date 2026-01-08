@@ -28,7 +28,7 @@
 #include <Library/PeCoffLib.h>
 #include <Library/PrintLib.h>
 
-#include <Protocol/PlatformBootManager.h>
+#include <Protocol/SimpleFileSystem.h>
 #include <Protocol/LoadedImage.h>
 #include <Protocol/DevicePathToText.h>
 

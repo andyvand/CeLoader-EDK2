@@ -56,12 +56,14 @@
   UefiApplicationEntryPoint
   DebugLib
   PcdLib
-  BootManagerUiLib
+  CompilerIntrinsicsLib
 
 [Guids]
   gEfiFileInfoGuid                      ## SOMETIMES_CONSUMES   ## UNDEFINED
   gEfiFileSystemInfoGuid                ## SOMETIMES_CONSUMES   ## UNDEFINED
   gEfiFileSystemVolumeLabelInfoIdGuid   ## SOMETIMES_CONSUMES   ## UNDEFINED
+  gEfiAcpi10TableGuid
+  gEfiAcpi20TableGuid
 
 [Protocols]
   gEfiDiskIoProtocolGuid                ## TO_START
