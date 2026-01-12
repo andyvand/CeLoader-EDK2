@@ -37,6 +37,7 @@
 #include "bootarg.h"
 
 #define memset(dest, ch, count) SetMem(dest,(UINTN)(count),(UINT8)(ch))
+//#define DUMP_INFO
 
 BOOT_ARGS *pBootArgs;
 
@@ -52,32 +53,49 @@ EFI_HANDLE           g_ImageHandle;
 EFI_SYSTEM_TABLE     *g_pSystemTable;
 
 CHAR16 *
+EFIAPI
 DevicePathToStr (
   IN EFI_DEVICE_PATH_PROTOCOL  *DevPath
   )
 {
-  CHAR16  *Text;
-
-  Text = ConvertDevicePathToText (
+  return ConvertDevicePathToText (
            DevPath,
            FALSE,
            TRUE
            );
-  if (Text == NULL) {
-    Text = AllocateCopyPool (sizeof (L"?"), L"?");
-    ASSERT (Text != NULL);
-  }
-
-  return Text;
 }
 
+#if 0
+EFI_DEVICE_PATH_PROTOCOL *
+EFIAPI
+DevicePathFromHandle (
+  IN EFI_HANDLE  Handle
+  )
+{
+  EFI_DEVICE_PATH_PROTOCOL  *DevicePath;
+  EFI_STATUS                Status;
+
+  Status = gBS->HandleProtocol (
+                  Handle,
+                  &gEfiDevicePathProtocolGuid,
+                  (VOID *)&DevicePath
+                  );
+  if (EFI_ERROR (Status)) {
+    DevicePath = NULL;
+  }
+
+  return DevicePath;
+}
+#endif
+
 typedef void (*PFN_LAUNCH)();
-EFI_STATUS FindAcpiTable (IN EFI_SYSTEM_TABLE *pSystemTable, UINTN *pdwRSDPPtr);
+EFI_STATUS FindAcpiTable (UINTN *pdwRSDPPtr);
 EFI_STATUS EFIAPI DisplaySettings (IN UINTN HandleIdx, IN BOOLEAN HandleValid);
 void DumpMemoryMap (IN EFI_HANDLE ImageHandle);
 void DumpVidModes ();
 void SetBootArgs(UINT32 dwDefVideoWidth, UINT32 dwDefVideoHeight, 
 				 UINT32 dwDefVideoDepth, UINT32 dwStride, UINT32 pVideoBuff);
+
 //======================================================================
 // Bootloader Entry Point
 //======================================================================
@@ -120,6 +138,10 @@ LoaderMain (
   UINTN           MapKey = 0;
 	UINTN           dwACPI = 0;
 
+  gST = SystemTable;
+  gBS = SystemTable->BootServices;
+  gRT = SystemTable->RuntimeServices;
+  
     //
     // Print a message to the console output device.
     //
@@ -137,7 +159,7 @@ LoaderMain (
     }
 
 #ifdef DUMP_INFO
-	DumpMemoryMap (ImageHandle);
+    DumpMemoryMap (ImageHandle);
 #endif //DUMP_INFO
 
     //
@@ -147,57 +169,56 @@ LoaderMain (
                                  (VOID*)&LoadedImage);
 
     if (EFI_ERROR(Status)) 
-	{
+	  {
         Print(L"Can not retrieve a LoadedImageProtocol handle for ImageHandle\n");
         gBS->Exit(ImageHandle,EFI_SUCCESS,0,NULL);
+    } else {
+        Print(L"Got LoadedImageProtocol handle: 0x%lx\n", (unsigned long)LoadedImage);
     }
 
-    Status = gBS->HandleProtocol (LoadedImage->DeviceHandle, &gEfiDevicePathProtocolGuid,
-                                 (VOID*)&DevicePath);
+    DevicePath = DevicePathFromHandle(LoadedImage->DeviceHandle);
 
-    if (EFI_ERROR(Status) || DevicePath==NULL) 
-	{
+    if (DevicePath==NULL)
+    {
         Print(L"Can not find a DevicePath handle for LoadedImage->DeviceHandle\n");
         gBS->Exit(ImageHandle,EFI_SUCCESS,0,NULL);
+    } else {
+        Print(L"Got DevicePath handle: 0x%lx\n", (unsigned long)DevicePath);
     }
 
     DevicePathAsString = DevicePathToStr(DevicePath);
     if (DevicePathAsString != NULL)
-	{
-        Print (L"Image device : %s\n", DevicePathAsString);
+    {
+        Print(L"Image device : %s\n", DevicePathAsString);
         FreePool(DevicePathAsString);
+    } else {
+        Print(L"No device path string\n");
     }
 
-    DevicePathAsString = DevicePathToStr(LoadedImage->FilePath);
-    if (DevicePathAsString != NULL)
-	{
-        Print (L"Image file   : %s\n", DevicePathToStr (LoadedImage->FilePath));
-        FreePool(DevicePathAsString);
-    }
+    Print(L"Image Base   : %X\n", LoadedImage->ImageBase);
+    Print(L"Image Size   : %X\n", LoadedImage->ImageSize);
 
-    Print (L"Image Base   : %X\n", LoadedImage->ImageBase);
-    Print (L"Image Size   : %X\n", LoadedImage->ImageSize);
-
-	//
-	// Get ACPI Table Ptr
-	//
-	Status = FindAcpiTable (gST, &dwACPI);
-	Print (L"FindAcpiTable returned status %x,  ptr:%x\r\n", Status, dwACPI);
+    //
+    // Get ACPI Table Ptr
+    //
+    Status = FindAcpiTable (&dwACPI);
+    Print(L"FindAcpiTable returned status %x,  ptr:%x\r\n", Status, dwACPI);
 
     //
     // Open the volume for the device where the Loader was loaded from.
     //
     Status = gBS->HandleProtocol (LoadedImage->DeviceHandle,&gEfiSimpleFileSystemProtocolGuid,
                                  (VOID*)&Vol);
-    if (EFI_ERROR(Status)) 
-	{
+  
+    if (EFI_ERROR(Status))
+    {
         Print(L"Can not get a FileSystem handle for LoadedImage->DeviceHandle\n");
         gBS->Exit(ImageHandle,EFI_SUCCESS,0,NULL);
     }
 
     Status = Vol->OpenVolume (Vol, &RootFs);
     if (EFI_ERROR(Status)) 
-	{
+    {
         Print(L"Can not open the volume for the file system\n");
         gBS->Exit(ImageHandle,EFI_SUCCESS,0,NULL);
     }
@@ -312,7 +333,7 @@ LoaderMain (
 			// Read the block data  
 			Size = dwBlkLength;
 			Status = FileHandle->Read(FileHandle, &Size, (void *)(dwBlkStart & 0x7fffffff));
-			if (EFI_ERROR(Status)) 
+			if (EFI_ERROR(Status))
 			{
 				Print(L"Can not blk size\n");
 				gBS->Exit(ImageHandle,EFI_SUCCESS,0,NULL);
@@ -364,7 +385,7 @@ LoaderMain (
 
 void PrintGUID (EFI_GUID guid)
 {
-	Print (L"%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+	Print(L"%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 	       guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
 }
 
@@ -486,36 +507,39 @@ EFI_GUID gEfiAcpi20TableGuid = EFI_ACPI_20_TABLE_GUID;
 EFI_GUID gEfiAcpi10TableGuid = EFI_ACPI_TABLE_GUID;
 #endif
 
-EFI_STATUS FindAcpiTable (IN EFI_SYSTEM_TABLE *pSystemTable, UINTN *pdwRSDPPtr)
+EFI_STATUS FindAcpiTable (UINTN *pdwRSDPPtr)
 {
     EFI_STATUS Status = EFI_SUCCESS;
-    void *pRsdp = NULL;
+    UINT64 pRsdp = 0;
     UINTN Index = 0;
     
     // found ACPI table RSD_PTR from system table
-    for(Index = 0; Index < pSystemTable->NumberOfTableEntries; Index++) 
-	{
-		Print (L"Index %d  ", Index);
-		PrintGUID (pSystemTable->ConfigurationTable[Index].VendorGuid);
-		Print (L"\r\n");
+    for(Index = 0; Index < gST->NumberOfTableEntries; Index++)
+    {
+      Print(L"Index %d  ", Index);
+      PrintGUID (gST->ConfigurationTable[Index].VendorGuid);
+      Print(L"\r\n");
 
-		if(CompareGuid (&(pSystemTable->ConfigurationTable[Index].VendorGuid), &gEfiAcpi20TableGuid) ||
-            CompareGuid (&(pSystemTable->ConfigurationTable[Index].VendorGuid), &gEfiAcpi10TableGuid)) 
-		{
-			//
-			// A match was found.
-			//
-			pRsdp = g_pSystemTable->ConfigurationTable[Index].VendorTable;
-			*pdwRSDPPtr = (UINTN)pRsdp;
-			Print(L"FindAcpiTable: find Rsdp 0x%X\n", pRsdp);
-			break;
-		}
+      if (CompareGuid (&gST->ConfigurationTable[Index].VendorGuid, &gEfiAcpi20TableGuid)) {
+        pRsdp = (UINT64)(UINTN)gST->ConfigurationTable[Index].VendorTable;
+        Print(L"FindAcpiTable: find ACPI2 Rsdp 0x%X\n", pRsdp);
+        break;
+      } else if (CompareGuid (&gST->ConfigurationTable[Index].VendorGuid, &gEfiAcpi10TableGuid)) {
+        pRsdp = (UINT64)(UINTN)gST->ConfigurationTable[Index].VendorTable;
+        Print(L"FindAcpiTable: find ACPI1 Rsdp 0x%X\n", pRsdp);
+        break;
+      }
     }
     
-    if(pRsdp == NULL) 
-	{
-        Print (L"FindAcpiTable: failed to find Rsdp!!!!\n");
+    if(pRsdp == 0)
+    {
+        Print(L"FindAcpiTable: failed to find Rsdp!!!!\n");
         Status = EFI_NOT_FOUND;
+    } else {
+      if (pdwRSDPPtr != NULL)
+      {
+        pdwRSDPPtr[0] = (UINTN)pRsdp;
+      }
     }
      
     return Status;
@@ -600,7 +624,7 @@ void DumpVidModes ()
 	                             NULL, (VOID**)&pGraphicsOutput);
     if (EFI_ERROR(Status)) 
 	{
-        Print (L"Failed to acquire GraphicsOutputProtoco handle,(Status = 0x%x)\n", Status);
+        Print(L"Failed to acquire GraphicsOutputProtoco handle,(Status = 0x%x)\n", Status);
         return ;
     }
 
@@ -631,23 +655,23 @@ void DumpVidModes ()
     }
 
 	// Dump video information
-	Print (L"Video mode        %d \r\n", (UINT32)pGraphicsOutput->Mode->Mode);
-	Print (L"Video max mode    %d \r\n", (UINT32)pGraphicsOutput->Mode->MaxMode);
-	Print (L"Video Width       %d \r\n", (UINT32)pGraphicsOutput->Mode->Info->HorizontalResolution);
-	Print (L"Video Height      %d \r\n", (UINT32)pGraphicsOutput->Mode->Info->VerticalResolution);
-	Print (L"Video pixFmt      %d \r\n", (UINT32)pGraphicsOutput->Mode->Info->PixelFormat);
-	Print (L"Video Pixel       %x %x %x %x \r\n", pGraphicsOutput->Mode->Info->PixelInformation.RedMask,
+	Print(L"Video mode        %d \r\n", (UINT32)pGraphicsOutput->Mode->Mode);
+	Print(L"Video max mode    %d \r\n", (UINT32)pGraphicsOutput->Mode->MaxMode);
+	Print(L"Video Width       %d \r\n", (UINT32)pGraphicsOutput->Mode->Info->HorizontalResolution);
+	Print(L"Video Height      %d \r\n", (UINT32)pGraphicsOutput->Mode->Info->VerticalResolution);
+	Print(L"Video pixFmt      %d \r\n", (UINT32)pGraphicsOutput->Mode->Info->PixelFormat);
+	Print(L"Video Pixel       %x %x %x %x \r\n", pGraphicsOutput->Mode->Info->PixelInformation.RedMask,
 		   pGraphicsOutput->Mode->Info->PixelInformation.GreenMask,
 		   pGraphicsOutput->Mode->Info->PixelInformation.BlueMask,
 		   pGraphicsOutput->Mode->Info->PixelInformation.ReservedMask);
-	Print (L"Video Width       %d \r\n", (UINT32)pGraphicsOutput->Mode->Info->PixelsPerScanLine);
+	Print(L"Video Width       %d \r\n", (UINT32)pGraphicsOutput->Mode->Info->PixelsPerScanLine);
 
 	Tst = pGraphicsOutput->Mode->FrameBufferBase;
 	pTst = (UINT8 *)&Tst;
-	Print (L"Framebuffer Low  %x \r\n", (UINT32)pGraphicsOutput->Mode->FrameBufferBase);
+	Print(L"Framebuffer Low  %x \r\n", (UINT32)pGraphicsOutput->Mode->FrameBufferBase);
 
-	Print (L"Framebuffer Low  %x \r\n", *(UINTN *)pTst);
-	Print (L"Framebuffer High %x \r\n", *(UINTN *)(pTst+4));
+	Print(L"Framebuffer Low  %x \r\n", *(UINTN *)pTst);
+	Print(L"Framebuffer High %x \r\n", *(UINTN *)(pTst+4));
 
 
 	SetBootArgs(pGraphicsOutput->Mode->Info->HorizontalResolution, pGraphicsOutput->Mode->Info->VerticalResolution,

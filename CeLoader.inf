@@ -56,7 +56,6 @@
   UefiApplicationEntryPoint
   DebugLib
   PcdLib
-  CompilerIntrinsicsLib
 
 [Guids]
   gEfiFileInfoGuid                      ## SOMETIMES_CONSUMES   ## UNDEFINED
@@ -72,6 +71,7 @@
   gEfiSimpleFileSystemProtocolGuid      ## BY_START
   gEfiUnicodeCollation2ProtocolGuid     ## TO_START
   gEfiLoadedImageProtocolGuid           ## SOMETIMES_CONSUMES
+  gEfiDevicePathProtocolGuid
 
 [Pcd]
   gEfiMdePkgTokenSpaceGuid.PcdUefiVariableDefaultLang           ## SOMETIMES_CONSUMES
