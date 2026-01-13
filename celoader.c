@@ -286,7 +286,7 @@ LoaderMain (
 		// Allocate a buffer for NK.BIN
 		//
 		Size = dwNKLength;
-		OsKernelBuffer = (void *)(dwNKStart & 0x7fffffff);
+		OsKernelBuffer = (void *)(dwNKStart /*& 0x7fffffff*/);
 		gBS->AllocatePool(EfiLoaderData, Size, &OsKernelBuffer);
 
 		if (OsKernelBuffer == NULL) 
@@ -296,7 +296,6 @@ LoaderMain (
 		}
 		else
 			Print(L"buffer allocated\n");
-			
 	
 		dwCount = 0;
 		//while (dwCount < 5)
@@ -308,7 +307,7 @@ LoaderMain (
 			{
 				Print(L"Can not read dwBlkStart\n");
 				gBS->Exit(ImageHandle,EFI_SUCCESS,0,NULL);
-			}
+            }
 
 			Size = 4;
 			Status = FileHandle->Read(FileHandle, &Size, &dwBlkLength);
@@ -332,7 +331,7 @@ LoaderMain (
 
 			// Read the block data  
 			Size = dwBlkLength;
-			Status = FileHandle->Read(FileHandle, &Size, (void *)(dwBlkStart & 0x7fffffff));
+			Status = FileHandle->Read(FileHandle, &Size, (void *)(dwBlkStart /*& 0x7fffffff*/));
 			if (EFI_ERROR(Status))
 			{
 				Print(L"Can not blk size\n");
